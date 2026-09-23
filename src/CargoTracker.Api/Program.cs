@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<IShipmentRepository, InMemoryShipmentRepository>();
+builder.Services.AddScoped<IShipmentRepository, EfShipmentRepository>();
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
 builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
