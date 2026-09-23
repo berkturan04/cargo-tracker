@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: cargo-tracker-db
+    environment:
+      POSTGRES_USER: cargo
+      POSTGRES_PASSWORD: cargo_dev_pw
+      POSTGRES_DB: cargotracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - cargo-tracker-data:/var/lib/postgresql
+
+volumes:
+  cargo-tracker-data:
