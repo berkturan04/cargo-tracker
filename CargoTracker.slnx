@@ -5,4 +5,7 @@
     <Project Path="src/CargoTracker.Domain/CargoTracker.Domain.csproj" />
     <Project Path="src/CargoTracker.Infrastructure/CargoTracker.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CargoTracker.Domain.Tests/CargoTracker.Domain.Tests.csproj" />
+  </Folder>
 </Solution>

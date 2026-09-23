@@ -1,4 +1,5 @@
 ﻿using CargoTracker.Domain.Enums;
+using CargoTracker.Domain.Exceptions;
 
 namespace CargoTracker.Domain.Entities;
 
@@ -12,6 +13,16 @@ public class Shipment
     public decimal WeightKg { get; private set; }
     public ShipmentStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
+
+    private static readonly Dictionary<ShipmentStatus, ShipmentStatus[]> AllowedTransitions = new()
+{
+    [ShipmentStatus.Created] = new[] { ShipmentStatus.AtBranch },
+    [ShipmentStatus.AtBranch] = new[] { ShipmentStatus.InTransit },
+    [ShipmentStatus.InTransit] = new[] { ShipmentStatus.OutForDelivery },
+    [ShipmentStatus.OutForDelivery] = new[] { ShipmentStatus.Delivered, ShipmentStatus.Returned },
+    [ShipmentStatus.Delivered] = new[] { ShipmentStatus.Returned },
+    [ShipmentStatus.Returned] = Array.Empty<ShipmentStatus>()
+};
 
     public Shipment(string trackingNumber, string receiverName, string originCity, string destinationCity, decimal weightKg)
     {
@@ -35,6 +46,16 @@ public class Shipment
         Status = ShipmentStatus.Created;
         CreatedAt=DateTime.UtcNow;
     }
+
+    public void AdvanceTo(ShipmentStatus newStatus)
+{
+    if (!AllowedTransitions.TryGetValue(Status, out var allowedNextStatuses) || !allowedNextStatuses.Contains(newStatus))
+    {
+        throw new InvalidShipmentStatusTransitionException(Status, newStatus);
+    }
+
+    Status = newStatus;
+}
     
 
 }

@@ -3,5 +3,6 @@
 public enum ShipmentStatus
 {
     Created = 1, AtBranch = 2, InTransit= 3,
-    OutForDelivery = 4, Delivred = 5, Returned = 6
+    OutForDelivery = 4, Delivered = 5, Returned = 6,
+
 }
