@@ -10,6 +10,7 @@ public class CargoTrackerDbContext : DbContext
     }
 
     public DbSet<Shipment> Shipments => Set<Shipment>();
+    public DbSet<ShipmentStatusHistory> ShipmentStatusHistories => Set<ShipmentStatusHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,16 @@ public class CargoTrackerDbContext : DbContext
 
             entity.Property(s => s.WeightKg)
                 .HasPrecision(10, 2);
+
+            entity.HasMany(s => s.StatusHistory)
+                .WithOne()
+                .HasForeignKey(sh => sh.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ShipmentStatusHistory>(entity =>
+        {
+            entity.HasKey(h => h.Id);
         });
     }
 }

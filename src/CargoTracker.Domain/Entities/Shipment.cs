@@ -13,6 +13,7 @@ public class Shipment
     public decimal WeightKg { get; private set; }
     public ShipmentStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public ICollection<ShipmentStatusHistory> StatusHistory { get; private set; } = new List<ShipmentStatusHistory>();
 
     private static readonly Dictionary<ShipmentStatus, ShipmentStatus[]> AllowedTransitions = new()
 {
@@ -45,6 +46,7 @@ public class Shipment
         WeightKg = weightKg;
         Status = ShipmentStatus.Created;
         CreatedAt=DateTime.UtcNow;
+        StatusHistory.Add(new ShipmentStatusHistory(Id, null, ShipmentStatus.Created));
     }
 
     public void AdvanceTo(ShipmentStatus newStatus)
@@ -53,6 +55,7 @@ public class Shipment
     {
         throw new InvalidShipmentStatusTransitionException(Status, newStatus);
     }
+    StatusHistory.Add(new ShipmentStatusHistory(Id, Status, newStatus));
 
     Status = newStatus;
 }
