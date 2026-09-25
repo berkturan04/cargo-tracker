@@ -11,6 +11,7 @@ public class CargoTrackerDbContext : DbContext
 
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ShipmentStatusHistory> ShipmentStatusHistories => Set<ShipmentStatusHistory>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +52,22 @@ public class CargoTrackerDbContext : DbContext
         {
             entity.HasKey(h => h.Id);
             entity.Property(s => s.Id).ValueGeneratedNever();
+        });
+        
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+            entity.Property(u => u.Id).ValueGeneratedNever();
+
+            entity.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            entity.HasIndex(u => u.Email)
+                .IsUnique();
+
+            entity.Property(u => u.PasswordHash)
+                .IsRequired();
         });
     }
 }
