@@ -17,6 +17,7 @@ public class CargoTrackerDbContext : DbContext
         modelBuilder.Entity<Shipment>(entity =>
         {
             entity.HasKey(s => s.Id);
+            entity.Property(s => s.Id).ValueGeneratedNever();
 
             entity.Property(s => s.TrackingNumber)
                 .IsRequired()
@@ -49,6 +50,7 @@ public class CargoTrackerDbContext : DbContext
         modelBuilder.Entity<ShipmentStatusHistory>(entity =>
         {
             entity.HasKey(h => h.Id);
+            entity.Property(s => s.Id).ValueGeneratedNever();
         });
     }
 }
