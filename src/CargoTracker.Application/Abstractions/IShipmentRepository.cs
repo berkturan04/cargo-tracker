@@ -7,5 +7,6 @@ public interface IShipmentRepository
     Task AddAsync(Shipment shipment);
     Task<Shipment?> GetByTrackingNumberAsync(string trackingNumber);
     Task<IReadOnlyList<Shipment>> GetAllAsync();
+    Task SaveChangesAsync();
 
 }

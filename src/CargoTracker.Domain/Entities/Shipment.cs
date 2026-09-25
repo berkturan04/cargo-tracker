@@ -15,6 +15,8 @@ public class Shipment
     public DateTime CreatedAt { get; private set; }
     public ICollection<ShipmentStatusHistory> StatusHistory { get; private set; } = new List<ShipmentStatusHistory>();
 
+
+    private Shipment() { } // For EF Core
     private static readonly Dictionary<ShipmentStatus, ShipmentStatus[]> AllowedTransitions = new()
 {
     [ShipmentStatus.Created] = new[] { ShipmentStatus.AtBranch },

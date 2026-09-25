@@ -29,4 +29,9 @@ public class EfShipmentRepository : IShipmentRepository
         var shipment = await _dbContext.Shipments.FirstOrDefaultAsync(s => s.TrackingNumber == trackingNumber);
         return shipment;
     }
+
+    public Task SaveChangesAsync()
+    {
+        return _dbContext.SaveChangesAsync();
+    }
 }

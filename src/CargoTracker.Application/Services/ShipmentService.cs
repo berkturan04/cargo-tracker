@@ -1,6 +1,7 @@
 ﻿using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
 using CargoTracker.Domain.Entities;
+using CargoTracker.Domain.Enums;
 
 namespace CargoTracker.Application.Services;
 
@@ -57,4 +58,18 @@ public class ShipmentService : IShipmentService
             shipment.CreatedAt);
     }
 
+    public async Task<ShipmentResponse?> UpdateStatusAsync(string trackingNumber, string newStatus)
+    {
+        var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
+        if (shipment is null)
+            return null;
+        if(!Enum.TryParse<ShipmentStatus>(newStatus, true, out var parsedStatus))
+            throw new ArgumentException($"Geçersiz gönderi durumu: {newStatus}");
+        
+        shipment.AdvanceTo(parsedStatus);
+        
+        await _shipmentRepository.SaveChangesAsync();
+
+        return MapToResponse(shipment);
+    }
 }
