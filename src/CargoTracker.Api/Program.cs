@@ -2,6 +2,7 @@ using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
 using CargoTracker.Infrastructure.Persistence;
 using CargoTracker.Infrastructure.Repositories;
+using CargoTracker.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -12,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IShipmentRepository, EfShipmentRepository>();
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
+builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
 builder.Services.AddOpenApi();
