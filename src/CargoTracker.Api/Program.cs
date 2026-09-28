@@ -1,4 +1,5 @@
 using System.Text;
+using CargoTracker.Api.OpenApi;
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
 using CargoTracker.Infrastructure;
@@ -22,7 +23,10 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
