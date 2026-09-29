@@ -8,5 +8,6 @@ public interface IShipmentRepository
     Task<Shipment?> GetByTrackingNumberAsync(string trackingNumber);
     Task<IReadOnlyList<Shipment>> GetAllAsync();
     Task SaveChangesAsync();
+    Task<IReadOnlyList<Shipment>> GetByCustomerIdAsync(Guid customerId);
 
 }

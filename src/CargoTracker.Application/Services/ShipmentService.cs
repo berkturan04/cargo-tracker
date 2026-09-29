@@ -14,23 +14,24 @@ public class ShipmentService : IShipmentService
         _shipmentRepository = shipmentRepository;
     }
 
-    public async Task<ShipmentResponse> CreateAsync(CreateShipmentRequest request)
+    public async Task<ShipmentResponse> CreateAsync(CreateShipmentRequest request, Guid? customerId)
     {
-         var trackingNumber = "TRK" + Random.Shared.NextInt64(1_000_000_000, 10_000_000_000);
+        var trackingNumber = "TRK" + Random.Shared.NextInt64(1_000_000_000, 10_000_000_000);
 
-         var shipment = new Shipment
-         (
-             trackingNumber,
-             request.ReceiverName,
-             request.OriginCity,
-             request.DestinationCity,
-             request.WeightKg
+        var shipment = new Shipment
+        (
+            trackingNumber,
+            request.ReceiverName,
+            request.OriginCity,
+            request.DestinationCity,
+            request.WeightKg,
+            customerId
 
-         );
-         await _shipmentRepository.AddAsync(shipment);
+        );
+        await _shipmentRepository.AddAsync(shipment);
 
-         return MapToResponse(shipment);
-         
+        return MapToResponse(shipment);
+
     }
 
     public async Task<IReadOnlyList<ShipmentResponse>> GetAllAsync()
@@ -39,12 +40,16 @@ public class ShipmentService : IShipmentService
         return shipments.Select(MapToResponse).ToList();
     }
 
-    public async Task<ShipmentResponse?> GetByTrackingNumberAsync(string trackingNumber)
+    public async Task<ShipmentResponse?> GetByTrackingNumberAsync(string trackingNumber, Guid? requestingCustomerId)
     {
         var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
-        return shipment is null ? null : MapToResponse(shipment);
+        if (shipment is null)
+            return null;
+        if (requestingCustomerId.HasValue && shipment.CustomerId != requestingCustomerId.Value)
+            return null;
+        return MapToResponse(shipment);
     }
-    
+
     private static ShipmentResponse MapToResponse(Shipment shipment)
     {
         return new ShipmentResponse(
@@ -55,7 +60,9 @@ public class ShipmentService : IShipmentService
             shipment.DestinationCity,
             shipment.WeightKg,
             shipment.Status.ToString(),
-            shipment.CreatedAt);
+            shipment.CreatedAt,
+            shipment.CustomerId
+        );
     }
 
     public async Task<ShipmentResponse?> UpdateStatusAsync(string trackingNumber, string newStatus)
@@ -63,13 +70,18 @@ public class ShipmentService : IShipmentService
         var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
         if (shipment is null)
             return null;
-        if(!Enum.TryParse<ShipmentStatus>(newStatus, true, out var parsedStatus))
+        if (!Enum.TryParse<ShipmentStatus>(newStatus, true, out var parsedStatus))
             throw new ArgumentException($"Geçersiz gönderi durumu: {newStatus}");
-        
+
         shipment.AdvanceTo(parsedStatus);
-        
+
         await _shipmentRepository.SaveChangesAsync();
 
         return MapToResponse(shipment);
+    }
+    public async Task<IReadOnlyList<ShipmentResponse>> GetMyShipmentsAsync(Guid customerId)
+    {
+        var shipments = await _shipmentRepository.GetByCustomerIdAsync(customerId);
+        return shipments.Select(MapToResponse).ToList();
     }
 }

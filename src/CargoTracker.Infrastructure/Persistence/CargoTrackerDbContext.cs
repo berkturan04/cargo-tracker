@@ -46,6 +46,11 @@ public class CargoTrackerDbContext : DbContext
                 .WithOne()
                 .HasForeignKey(sh => sh.ShipmentId)
                 .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(s => s.CustomerId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ShipmentStatusHistory>(entity =>
@@ -53,7 +58,7 @@ public class CargoTrackerDbContext : DbContext
             entity.HasKey(h => h.Id);
             entity.Property(s => s.Id).ValueGeneratedNever();
         });
-        
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);

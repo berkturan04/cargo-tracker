@@ -117,4 +117,13 @@ public class ShipmentTests
 
         Assert.Throws<InvalidShipmentStatusTransitionException>(() => shipment.AdvanceTo(ShipmentStatus.AtBranch));
     }
+
+    [Fact]
+    public void Constructor_WithCustomerId_SetsCustomerId()
+    {
+        var customerId = Guid.NewGuid();
+        var shipment = new Shipment("TRK1", "Ahmet", "İstanbul", "Ankara", 1m, customerId);
+
+        Assert.Equal(customerId, shipment.CustomerId);
+    }
 }
