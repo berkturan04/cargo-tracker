@@ -24,4 +24,10 @@ public class EfUserRepository : IUserRepository
         var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email.Trim().ToLowerInvariant());
         return user;
     }
+
+    public async Task<User?> GetByIdAsync(Guid id)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+        return user;
+    }
 }

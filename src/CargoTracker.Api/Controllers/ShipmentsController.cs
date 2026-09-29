@@ -39,7 +39,7 @@ public class ShipmentsController : ControllerBase
 
         return response is null ? NotFound() : Ok(response);
     }
-    
+
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<ShipmentResponse>>> GetAll()
@@ -61,26 +61,52 @@ public class ShipmentsController : ControllerBase
     [Authorize(Roles = "Courier,Admin")]
     public async Task<ActionResult<ShipmentResponse>> UpdateStatus(string trackingNumber, UpdateShipmentStatusRequest request)
     {
+        Guid? requestingCourierId = User.IsInRole("Courier") ? GetCurrentUserId() : null;
+
         try
         {
-            var response = await _shipmentService.UpdateStatusAsync(trackingNumber, request.NewStatus);
+            var response = await _shipmentService.UpdateStatusAsync(trackingNumber, request.NewStatus, requestingCourierId);
 
             if (response is null)
                 return NotFound();
 
             return Ok(response);
         }
-
         catch (ArgumentException)
         {
             return BadRequest("Geçersiz durum adı.");
         }
-
         catch (InvalidShipmentStatusTransitionException ex)
         {
             return BadRequest(ex.Message);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+        }
     }
+
+    [HttpPatch("{trackingNumber}/courier")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ShipmentResponse>> AssignCourier(string trackingNumber, AssignCourierRequest request)
+    {
+        try
+        {
+            var response = await _shipmentService.AssignCourierAsync(trackingNumber, request.CourierId);
+            if (response is null)
+                return NotFound();
+            return Ok(response);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     private Guid GetCurrentUserId()
     {
         return Guid.Parse(User.FindFirstValue("sub")!);

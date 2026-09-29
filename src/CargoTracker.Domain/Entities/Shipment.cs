@@ -15,6 +15,7 @@ public class Shipment
     public DateTime CreatedAt { get; private set; }
     public ICollection<ShipmentStatusHistory> StatusHistory { get; private set; } = new List<ShipmentStatusHistory>();
     public Guid? CustomerId { get; private set; }
+    public Guid? CourierId { get; private set; }
 
 
     private Shipment() { } // For EF Core
@@ -51,6 +52,14 @@ public class Shipment
         CreatedAt = DateTime.UtcNow;
         StatusHistory.Add(new ShipmentStatusHistory(Id, null, ShipmentStatus.Created));
         CustomerId = customerId;
+    }
+
+    public void AssignCourier(Guid courierId)
+    {
+        if (Status is ShipmentStatus.Delivered or ShipmentStatus.Returned)
+            throw new InvalidOperationException("Teslim edilmiş veya iade edilmiş bir kargoya kurye atanamaz.");
+
+        CourierId = courierId;
     }
 
     public void AdvanceTo(ShipmentStatus newStatus)

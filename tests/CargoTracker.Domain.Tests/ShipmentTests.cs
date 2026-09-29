@@ -126,4 +126,16 @@ public class ShipmentTests
 
         Assert.Equal(customerId, shipment.CustomerId);
     }
+
+    [Fact]
+    public void AssignCourier_WhenDelivered_ThrowsException()
+    {
+        var shipment = CreateValidShipment();
+        shipment.AdvanceTo(ShipmentStatus.AtBranch);
+        shipment.AdvanceTo(ShipmentStatus.InTransit);
+        shipment.AdvanceTo(ShipmentStatus.OutForDelivery);
+        shipment.AdvanceTo(ShipmentStatus.Delivered);
+
+        Assert.Throws<InvalidOperationException>(() => shipment.AssignCourier(Guid.NewGuid()));
+    }
 }
