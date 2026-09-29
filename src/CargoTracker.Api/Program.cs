@@ -1,5 +1,6 @@
 using System.Text;
 using CargoTracker.Api.OpenApi;
+using CargoTracker.Api.Seeding;
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
 using CargoTracker.Infrastructure;
@@ -55,6 +56,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+await AdminSeeder.SeedAsync(app.Services, app.Configuration);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -11,32 +11,16 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        
+
     public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher, IJwtTokenGenerator jwtTokenGenerator)
     {
-            _userRepository = userRepository;
-            _passwordHasher = passwordHasher;
-            _jwtTokenGenerator = jwtTokenGenerator;
+        _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
+        _jwtTokenGenerator = jwtTokenGenerator;
     }
     public async Task<UserResponse> RegisterAsync(RegisterRequest request)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-        if (existingUser is not null)
-            throw new EmailAlreadyInUseException(request.Email);
-        
-        var role = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
-
-        var hashedPassword = _passwordHasher.Hash(request.Password);
-
-        var user = new User(
-        email: request.Email,
-        passwordHash: hashedPassword,
-        role: role
-    );
-        await _userRepository.AddAsync(user);
-
-        return MapToResponse(user);
-        
+        return await CreateUserInternalAsync(request.Email, request.Password, UserRole.Customer);
     }
     private static UserResponse MapToResponse(User user)
     {
@@ -51,5 +35,27 @@ public class AuthService : IAuthService
 
         var token = _jwtTokenGenerator.Generate(user);
         return new LoginResponse(token.Token, token.ExpiresAt, user.Email, user.Role.ToString());
+    }
+
+    public async Task<UserResponse> CreateUserAsync(CreateUserRequest request)
+    {
+        if (!Enum.TryParse<UserRole>(request.Role, ignoreCase: true, out var role) || !Enum.IsDefined(role))
+            throw new ArgumentException($"Geçersiz rol: {request.Role}");
+
+        return await CreateUserInternalAsync(request.Email, request.Password, role);
+    }
+    private async Task<UserResponse> CreateUserInternalAsync(string email, string password, UserRole role)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            throw new ArgumentException("Şifre en az 8 karakter olmalıdır.", nameof(password));
+
+        var existingUser = await _userRepository.GetByEmailAsync(email);
+        if (existingUser is not null)
+            throw new EmailAlreadyInUseException(email);
+
+        var user = new User(email, _passwordHasher.Hash(password), role);
+        await _userRepository.AddAsync(user);
+
+        return MapToResponse(user);
     }
 }
