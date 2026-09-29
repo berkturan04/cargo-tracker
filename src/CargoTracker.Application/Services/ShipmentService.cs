@@ -8,10 +8,12 @@ namespace CargoTracker.Application.Services;
 public class ShipmentService : IShipmentService
 {
     private readonly IShipmentRepository _shipmentRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ShipmentService(IShipmentRepository shipmentRepository)
+    public ShipmentService(IShipmentRepository shipmentRepository, IUserRepository userRepository)
     {
         _shipmentRepository = shipmentRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<ShipmentResponse> CreateAsync(CreateShipmentRequest request, Guid? customerId)
@@ -26,12 +28,10 @@ public class ShipmentService : IShipmentService
             request.DestinationCity,
             request.WeightKg,
             customerId
-
         );
         await _shipmentRepository.AddAsync(shipment);
 
         return MapToResponse(shipment);
-
     }
 
     public async Task<IReadOnlyList<ShipmentResponse>> GetAllAsync()
@@ -61,15 +61,20 @@ public class ShipmentService : IShipmentService
             shipment.WeightKg,
             shipment.Status.ToString(),
             shipment.CreatedAt,
-            shipment.CustomerId
+            shipment.CustomerId,
+            shipment.CourierId
         );
     }
 
-    public async Task<ShipmentResponse?> UpdateStatusAsync(string trackingNumber, string newStatus)
+    public async Task<ShipmentResponse?> UpdateStatusAsync(string trackingNumber, string newStatus, Guid? requestingCourierId)
     {
         var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
         if (shipment is null)
             return null;
+
+        if (requestingCourierId.HasValue && shipment.CourierId != requestingCourierId.Value)
+            throw new UnauthorizedAccessException("Bu kargo size atanmamış.");
+
         if (!Enum.TryParse<ShipmentStatus>(newStatus, true, out var parsedStatus))
             throw new ArgumentException($"Geçersiz gönderi durumu: {newStatus}");
 
@@ -79,9 +84,27 @@ public class ShipmentService : IShipmentService
 
         return MapToResponse(shipment);
     }
+
     public async Task<IReadOnlyList<ShipmentResponse>> GetMyShipmentsAsync(Guid customerId)
     {
         var shipments = await _shipmentRepository.GetByCustomerIdAsync(customerId);
         return shipments.Select(MapToResponse).ToList();
+    }
+
+    public async Task<ShipmentResponse?> AssignCourierAsync(string trackingNumber, Guid courierId)
+    {
+        var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
+        if (shipment is null)
+            return null;
+
+        var courier = await _userRepository.GetByIdAsync(courierId);
+        if (courier is null || courier.Role != UserRole.Courier)
+            throw new ArgumentException("Geçerli bir kurye bulunamadı.");
+
+        shipment.AssignCourier(courierId);
+
+        await _shipmentRepository.SaveChangesAsync();
+
+        return MapToResponse(shipment);
     }
 }
