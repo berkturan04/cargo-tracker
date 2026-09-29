@@ -1,4 +1,5 @@
-﻿using CargoTracker.Application.Abstractions;
+﻿using System.Security.Claims;
+using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
 using CargoTracker.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -22,23 +23,23 @@ public class ShipmentsController : ControllerBase
     [Authorize(Roles = "Customer,Admin")]
     public async Task<ActionResult<ShipmentResponse>> Create(CreateShipmentRequest request)
     {
-        var response = await _shipmentService.CreateAsync(request);
+        Guid? customerId = User.IsInRole("Customer") ? GetCurrentUserId() : null;
 
-        return CreatedAtAction(
-            nameof(GetByTrackingNumber),
-            new { trackingNumber = response.TrackingNumber },
-            response
-        );
+        var response = await _shipmentService.CreateAsync(request, customerId);
+
+        return CreatedAtAction(nameof(GetByTrackingNumber), new { trackingNumber = response.TrackingNumber }, response);
     }
 
     [HttpGet("{trackingNumber}")]
     public async Task<ActionResult<ShipmentResponse>> GetByTrackingNumber(string trackingNumber)
     {
-        var response = await _shipmentService.GetByTrackingNumberAsync(trackingNumber);
+        Guid? requestingCustomerId = User.IsInRole("Customer") ? GetCurrentUserId() : null;
+
+        var response = await _shipmentService.GetByTrackingNumberAsync(trackingNumber, requestingCustomerId);
 
         return response is null ? NotFound() : Ok(response);
     }
-
+    
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<ShipmentResponse>>> GetAll()
@@ -47,6 +48,15 @@ public class ShipmentsController : ControllerBase
 
         return Ok(list);
     }
+
+    [HttpGet("mine")]
+    [Authorize(Roles = "Customer")]
+    public async Task<ActionResult<IReadOnlyList<ShipmentResponse>>> GetMine()
+    {
+        var list = await _shipmentService.GetMyShipmentsAsync(GetCurrentUserId());
+        return Ok(list);
+    }
+
     [HttpPatch("{trackingNumber}/status")]
     [Authorize(Roles = "Courier,Admin")]
     public async Task<ActionResult<ShipmentResponse>> UpdateStatus(string trackingNumber, UpdateShipmentStatusRequest request)
@@ -70,5 +80,9 @@ public class ShipmentsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+    }
+    private Guid GetCurrentUserId()
+    {
+        return Guid.Parse(User.FindFirstValue("sub")!);
     }
 }

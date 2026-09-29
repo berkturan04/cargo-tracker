@@ -24,6 +24,11 @@ public class EfShipmentRepository : IShipmentRepository
         return await _dbContext.Shipments.ToListAsync();
     }
 
+    public async Task<IReadOnlyList<Shipment>> GetByCustomerIdAsync(Guid customerId)
+    {
+        return await _dbContext.Shipments.Where(s => s.CustomerId == customerId).ToListAsync();
+    }
+
     public async Task<Shipment?> GetByTrackingNumberAsync(string trackingNumber)
     {
         var shipment = await _dbContext.Shipments.FirstOrDefaultAsync(s => s.TrackingNumber == trackingNumber);
