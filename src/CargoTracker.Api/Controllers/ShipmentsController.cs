@@ -42,19 +42,30 @@ public class ShipmentsController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IReadOnlyList<ShipmentResponse>>> GetAll()
+    public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAll([FromQuery] ShipmentQuery query)
     {
-        var list = await _shipmentService.GetAllAsync();
-
-        return Ok(list);
+        try
+        {
+            return Ok(await _shipmentService.GetAllAsync(query));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("mine")]
     [Authorize(Roles = "Customer")]
-    public async Task<ActionResult<IReadOnlyList<ShipmentResponse>>> GetMine()
+    public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetMine([FromQuery] ShipmentQuery query)
     {
-        var list = await _shipmentService.GetMyShipmentsAsync(GetCurrentUserId());
-        return Ok(list);
+        try
+        {
+            return Ok(await _shipmentService.GetMyShipmentsAsync(GetCurrentUserId(), query));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPatch("{trackingNumber}/status")]
@@ -102,6 +113,20 @@ public class ShipmentsController : ControllerBase
             return BadRequest(ex.Message);
         }
         catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("assigned")]
+    [Authorize(Roles = "Courier")]
+    public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAssigned([FromQuery] ShipmentQuery query)
+    {
+        try
+        {
+            return Ok(await _shipmentService.GetAssignedToMeAsync(GetCurrentUserId(), query));
+        }
+        catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
         }

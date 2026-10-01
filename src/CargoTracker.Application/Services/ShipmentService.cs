@@ -34,12 +34,6 @@ public class ShipmentService : IShipmentService
         return MapToResponse(shipment);
     }
 
-    public async Task<IReadOnlyList<ShipmentResponse>> GetAllAsync()
-    {
-        var shipments = await _shipmentRepository.GetAllAsync();
-        return shipments.Select(MapToResponse).ToList();
-    }
-
     public async Task<ShipmentResponse?> GetByTrackingNumberAsync(string trackingNumber, Guid? requestingCustomerId)
     {
         var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
@@ -85,12 +79,6 @@ public class ShipmentService : IShipmentService
         return MapToResponse(shipment);
     }
 
-    public async Task<IReadOnlyList<ShipmentResponse>> GetMyShipmentsAsync(Guid customerId)
-    {
-        var shipments = await _shipmentRepository.GetByCustomerIdAsync(customerId);
-        return shipments.Select(MapToResponse).ToList();
-    }
-
     public async Task<ShipmentResponse?> AssignCourierAsync(string trackingNumber, Guid courierId)
     {
         var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
@@ -106,5 +94,42 @@ public class ShipmentService : IShipmentService
         await _shipmentRepository.SaveChangesAsync();
 
         return MapToResponse(shipment);
+    }
+
+    public Task<PagedResult<ShipmentResponse>> GetAllAsync(ShipmentQuery query)
+    => GetPagedAsync(BuildFilter(query, customerId: null, courierId: null));
+
+    public Task<PagedResult<ShipmentResponse>> GetMyShipmentsAsync(Guid customerId, ShipmentQuery query)
+    => GetPagedAsync(BuildFilter(query, customerId, courierId: null));
+
+    public Task<PagedResult<ShipmentResponse>> GetAssignedToMeAsync(Guid courierId, ShipmentQuery query)
+        => GetPagedAsync(BuildFilter(query, customerId: null, courierId));
+
+    private async Task<PagedResult<ShipmentResponse>> GetPagedAsync(ShipmentFilter filter)
+    {
+        var (shipments, totalCount) = await _shipmentRepository.GetFilteredAsync(filter);
+        var responseItems = shipments.Select(MapToResponse).ToList();
+        return new PagedResult<ShipmentResponse>(responseItems, filter.Page, filter.PageSize, totalCount);
+    }
+
+    private static ShipmentFilter BuildFilter(ShipmentQuery query, Guid? customerId, Guid? courierId)
+    {
+        if (query.Status != null && !Enum.TryParse<ShipmentStatus>(query.Status, true, out var parsedStatus))
+            throw new ArgumentException($"Geçersiz gönderi durumu: {query.Status}");
+
+        var page = query.Page < 1 ? 1 : query.Page;
+        var pageSize = query.PageSize < 1 || query.PageSize > 100 ? 10 : query.PageSize;
+
+        return new ShipmentFilter
+        {
+            CustomerId = customerId,
+            CourierId = courierId,
+            Status = query.Status != null ? Enum.Parse<ShipmentStatus>(query.Status, true) : null,
+            City = query.City,
+            FromDate = query.FromDate,
+            ToDate = query.ToDate,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 }
