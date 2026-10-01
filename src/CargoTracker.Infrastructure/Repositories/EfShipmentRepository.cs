@@ -19,20 +19,43 @@ public class EfShipmentRepository : IShipmentRepository
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<IReadOnlyList<Shipment>> GetAllAsync()
-    {
-        return await _dbContext.Shipments.ToListAsync();
-    }
-
-    public async Task<IReadOnlyList<Shipment>> GetByCustomerIdAsync(Guid customerId)
-    {
-        return await _dbContext.Shipments.Where(s => s.CustomerId == customerId).ToListAsync();
-    }
-
     public async Task<Shipment?> GetByTrackingNumberAsync(string trackingNumber)
     {
         var shipment = await _dbContext.Shipments.FirstOrDefaultAsync(s => s.TrackingNumber == trackingNumber);
         return shipment;
+    }
+
+    public async Task<(IReadOnlyList<Shipment> Items, int TotalCount)> GetFilteredAsync(ShipmentFilter filter)
+    {
+        var query = _dbContext.Shipments.AsNoTracking().AsQueryable();
+
+        if (filter.CustomerId.HasValue)
+            query = query.Where(s => s.CustomerId == filter.CustomerId.Value);
+
+        if (filter.CourierId.HasValue)
+            query = query.Where(s => s.CourierId == filter.CourierId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(s => s.Status == filter.Status.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.City))
+            query = query.Where(s => s.OriginCity.Contains(filter.City) || s.DestinationCity.Contains(filter.City));
+
+        if (filter.FromDate.HasValue)
+            query = query.Where(s => s.CreatedAt >= filter.FromDate.Value);
+
+        if (filter.ToDate.HasValue)
+            query = query.Where(s => s.CreatedAt <= filter.ToDate.Value);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(s => s.CreatedAt)
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
     }
 
     public Task SaveChangesAsync()
