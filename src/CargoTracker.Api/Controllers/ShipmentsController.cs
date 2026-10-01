@@ -2,6 +2,7 @@
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
 using CargoTracker.Domain.Exceptions;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,16 +14,22 @@ namespace CargoTracker.Api.Controllers;
 public class ShipmentsController : ControllerBase
 {
     private readonly IShipmentService _shipmentService;
+    private readonly IValidator<CreateShipmentRequest> _createShipmentValidator;
 
-    public ShipmentsController(IShipmentService shipmentService)
+    public ShipmentsController(IShipmentService shipmentService, IValidator<CreateShipmentRequest> createShipmentValidator)
     {
         _shipmentService = shipmentService;
+        _createShipmentValidator = createShipmentValidator;
     }
 
     [HttpPost]
     [Authorize(Roles = "Customer,Admin")]
     public async Task<ActionResult<ShipmentResponse>> Create(CreateShipmentRequest request)
     {
+        var validationResult = await _createShipmentValidator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+            return BadRequest(new ValidationProblemDetails(validationResult.ToDictionary()));
+
         Guid? customerId = User.IsInRole("Customer") ? GetCurrentUserId() : null;
 
         var response = await _shipmentService.CreateAsync(request, customerId);

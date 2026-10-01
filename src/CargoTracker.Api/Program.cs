@@ -3,10 +3,12 @@ using CargoTracker.Api.OpenApi;
 using CargoTracker.Api.Seeding;
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
+using CargoTracker.Application.Validators;
 using CargoTracker.Infrastructure;
 using CargoTracker.Infrastructure.Persistence;
 using CargoTracker.Infrastructure.Repositories;
 using CargoTracker.Infrastructure.Security;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +32,7 @@ builder.Services.AddOpenApi(options =>
 });
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateShipmentRequestValidator>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 if (jwtSettings is null || string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key.Length < 32)
