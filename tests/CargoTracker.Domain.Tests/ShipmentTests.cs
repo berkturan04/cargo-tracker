@@ -136,6 +136,6 @@ public class ShipmentTests
         shipment.AdvanceTo(ShipmentStatus.OutForDelivery);
         shipment.AdvanceTo(ShipmentStatus.Delivered);
 
-        Assert.Throws<InvalidOperationException>(() => shipment.AssignCourier(Guid.NewGuid()));
+        Assert.Throws<InvalidShipmentOperationException>(() => shipment.AssignCourier(Guid.NewGuid()));
     }
 }

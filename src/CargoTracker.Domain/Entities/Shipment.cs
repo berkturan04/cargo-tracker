@@ -57,7 +57,7 @@ public class Shipment
     public void AssignCourier(Guid courierId)
     {
         if (Status is ShipmentStatus.Delivered or ShipmentStatus.Returned)
-            throw new InvalidOperationException("Teslim edilmiş veya iade edilmiş bir kargoya kurye atanamaz.");
+            throw new InvalidShipmentOperationException("Teslim edilmiş veya iade edilmiş bir kargoya kurye atanamaz.");
 
         CourierId = courierId;
     }

@@ -1,6 +1,5 @@
 ﻿using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
-using CargoTracker.Application.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,36 +27,20 @@ public class AuthController : ControllerBase
         var validationResult = await _registerValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             return BadRequest(new ValidationProblemDetails(validationResult.ToDictionary()));
-        try
-        {
-            var response = await _authService.RegisterAsync(request);
 
-            return Ok(response);
-        }
-        catch (EmailAlreadyInUseException ex)
-        {
-            return Conflict(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var response = await _authService.RegisterAsync(request);
+        return Ok(response);
     }
+
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
     {
         var validationResult = await _loginValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
             return BadRequest(new ValidationProblemDetails(validationResult.ToDictionary()));
-        try
-        {
-            var response = await _authService.LoginAsync(request);
-            return Ok(response);
-        }
-        catch (InvalidCredentialsException ex)
-        {
-            return Unauthorized(ex.Message);
-        }
+
+        var response = await _authService.LoginAsync(request);
+        return Ok(response);
     }
 
     [Authorize]
