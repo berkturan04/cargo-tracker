@@ -1,7 +1,6 @@
 ﻿using CargoTracker.Application;
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
-using CargoTracker.Application.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,18 +21,7 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserResponse>> Create(CreateUserRequest request)
     {
-        try
-        {
-            var response = await _authService.CreateUserAsync(request);
-            return Ok(response);
-        }
-        catch (EmailAlreadyInUseException ex)
-        {
-            return Conflict(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var response = await _authService.CreateUserAsync(request);
+        return Ok(response);
     }
 }

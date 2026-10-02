@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.DTOs;
-using CargoTracker.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,28 +50,14 @@ public class ShipmentsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAll([FromQuery] ShipmentQuery query)
     {
-        try
-        {
-            return Ok(await _shipmentService.GetAllAsync(query));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(await _shipmentService.GetAllAsync(query));
     }
 
     [HttpGet("mine")]
     [Authorize(Roles = "Customer")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetMine([FromQuery] ShipmentQuery query)
     {
-        try
-        {
-            return Ok(await _shipmentService.GetMyShipmentsAsync(GetCurrentUserId(), query));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(await _shipmentService.GetAllAsync(query));
     }
 
     [HttpPatch("{trackingNumber}/status")]
@@ -81,62 +66,27 @@ public class ShipmentsController : ControllerBase
     {
         Guid? requestingCourierId = User.IsInRole("Courier") ? GetCurrentUserId() : null;
 
-        try
-        {
-            var response = await _shipmentService.UpdateStatusAsync(trackingNumber, request.NewStatus, requestingCourierId);
-
-            if (response is null)
-                return NotFound();
-
-            return Ok(response);
-        }
-        catch (ArgumentException)
-        {
-            return BadRequest("Geçersiz durum adı.");
-        }
-        catch (InvalidShipmentStatusTransitionException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
-        }
+        var response = await _shipmentService.UpdateStatusAsync(trackingNumber, request.NewStatus, requestingCourierId);
+        if (response is null)
+            return NotFound();
+        return Ok(response);
     }
 
     [HttpPatch("{trackingNumber}/courier")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ShipmentResponse>> AssignCourier(string trackingNumber, AssignCourierRequest request)
     {
-        try
-        {
-            var response = await _shipmentService.AssignCourierAsync(trackingNumber, request.CourierId);
-            if (response is null)
-                return NotFound();
-            return Ok(response);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        var response = await _shipmentService.AssignCourierAsync(trackingNumber, request.CourierId);
+        if (response is null)
+            return NotFound();
+        return Ok(response);
     }
 
     [HttpGet("assigned")]
     [Authorize(Roles = "Courier")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAssigned([FromQuery] ShipmentQuery query)
     {
-        try
-        {
-            return Ok(await _shipmentService.GetAssignedToMeAsync(GetCurrentUserId(), query));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(await _shipmentService.GetAllAsync(query));
     }
 
     private Guid GetCurrentUserId()

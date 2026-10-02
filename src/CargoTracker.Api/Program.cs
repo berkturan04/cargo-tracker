@@ -1,4 +1,5 @@
 using System.Text;
+using CargoTracker.Api.ExceptionHandling;
 using CargoTracker.Api.OpenApi;
 using CargoTracker.Api.Seeding;
 using CargoTracker.Application.Abstractions;
@@ -19,6 +20,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
+    };
+});
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IShipmentRepository, EfShipmentRepository>();
 builder.Services.AddScoped<IShipmentService, ShipmentService>();
 builder.Services.AddScoped<IUserRepository, EfUserRepository>();
@@ -67,6 +76,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
