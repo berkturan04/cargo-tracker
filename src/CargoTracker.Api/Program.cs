@@ -14,77 +14,101 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-builder.Services.AddProblemDetails(options =>
+try
 {
-    options.CustomizeProblemDetails = ctx =>
-    {
-        ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
-    };
-});
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddScoped<IShipmentRepository, EfShipmentRepository>();
-builder.Services.AddScoped<IShipmentService, ShipmentService>();
-builder.Services.AddScoped<IUserRepository, EfUserRepository>();
-builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-});
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateShipmentRequestValidator>();
+    Log.Information("CargoTracker.Api başlatılıyor...");
 
-var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
-if (jwtSettings is null || string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key.Length < 32)
-    throw new InvalidOperationException("Jwt:Key ayarı bulunamadı veya 32 karakterden kısa. 'dotnet user-secrets set' ile tanımla.");
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    builder.Services.AddSerilog((services, lc) => lc
+        .ReadFrom.Configuration(builder.Configuration)
+        .ReadFrom.Services(services));
+
+    // Add services to the container.
+
+    builder.Services.AddControllers();
+    builder.Services.AddProblemDetails(options =>
     {
-        options.MapInboundClaims = false;
-        options.TokenValidationParameters = new TokenValidationParameters
+        options.CustomizeProblemDetails = ctx =>
         {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtSettings.Audience,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
-            RoleClaimType = "role"
+            ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
         };
     });
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddScoped<IShipmentRepository, EfShipmentRepository>();
+    builder.Services.AddScoped<IShipmentService, ShipmentService>();
+    builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+    builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
+    builder.Services.AddOpenApi(options =>
+    {
+        options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    });
+    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+    builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+    builder.Services.AddValidatorsFromAssemblyContaining<CreateShipmentRequestValidator>();
 
-builder.Services.AddAuthorization();
+    var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+    if (jwtSettings is null || string.IsNullOrWhiteSpace(jwtSettings.Key) || jwtSettings.Key.Length < 32)
+        throw new InvalidOperationException("Jwt:Key ayarı bulunamadı veya 32 karakterden kısa. 'dotnet user-secrets set' ile tanımla.");
 
-var app = builder.Build();
-await AdminSeeder.SeedAsync(app.Services, app.Configuration);
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtSettings.Audience,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+                RoleClaimType = "role"
+            };
+        });
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    builder.Services.AddAuthorization();
+
+    var app = builder.Build();
+    await AdminSeeder.SeedAsync(app.Services, app.Configuration);
+
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapOpenApi();
+        app.MapScalarApiReference();
+    }
+
+    app.UseExceptionHandler();
+
+    app.UseSerilogRequestLogging();
+
+    app.UseHttpsRedirection();
+
+    app.UseAuthentication();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    app.Run();
 }
-
-app.UseExceptionHandler();
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "CargoTracker.Api beklenmeyen şekilde sonlandı.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
