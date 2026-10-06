@@ -1,4 +1,5 @@
 using System.Text;
+using CargoTracker.Api.BackgroundServices;
 using CargoTracker.Api.ExceptionHandling;
 using CargoTracker.Api.OpenApi;
 using CargoTracker.Api.Seeding;
@@ -6,6 +7,7 @@ using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
 using CargoTracker.Application.Validators;
 using CargoTracker.Infrastructure;
+using CargoTracker.Infrastructure.Notifications;
 using CargoTracker.Infrastructure.Persistence;
 using CargoTracker.Infrastructure.Repositories;
 using CargoTracker.Infrastructure.Security;
@@ -46,6 +48,9 @@ try
     builder.Services.AddScoped<IUserRepository, EfUserRepository>();
     builder.Services.AddSingleton<IPasswordHasher, PasswordHasherService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddSingleton<INotificationService, LoggingNotificationService>();
+    builder.Services.Configure<DelayedShipmentCheckerOptions>(builder.Configuration.GetSection("DelayedShipmentChecker"));
+    builder.Services.AddHostedService<DelayedShipmentCheckerService>();
     builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
     builder.Services.AddOpenApi(options =>

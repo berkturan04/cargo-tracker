@@ -8,5 +8,5 @@ public interface IShipmentRepository
     Task<Shipment?> GetByTrackingNumberAsync(string trackingNumber);
     Task SaveChangesAsync();
     Task<(IReadOnlyList<Shipment> Items, int TotalCount)> GetFilteredAsync(ShipmentFilter filter);
-
+    Task<IReadOnlyList<Shipment>> GetDelayedUnnotifiedAsync(TimeSpan threshold, CancellationToken cancellationToken);
 }
