@@ -1,5 +1,6 @@
 ﻿using CargoTracker.Application.Abstractions;
 using CargoTracker.Domain.Entities;
+using CargoTracker.Domain.Enums;
 using CargoTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,18 @@ public class EfShipmentRepository : IShipmentRepository
     {
         var shipment = await _dbContext.Shipments.FirstOrDefaultAsync(s => s.TrackingNumber == trackingNumber);
         return shipment;
+    }
+
+    public async Task<IReadOnlyList<Shipment>> GetDelayedUnnotifiedAsync(TimeSpan threshold, CancellationToken cancellationToken)
+    {
+        var cutoff = DateTime.UtcNow - threshold;
+
+        return await _dbContext.Shipments
+            .Where(s => s.DelayNotifiedAt == null &&
+                        s.Status != ShipmentStatus.Delivered &&
+                        s.Status != ShipmentStatus.Returned &&
+                        s.CreatedAt < cutoff)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<Shipment> Items, int TotalCount)> GetFilteredAsync(ShipmentFilter filter)

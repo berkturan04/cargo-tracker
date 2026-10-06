@@ -16,6 +16,7 @@ public class Shipment
     public ICollection<ShipmentStatusHistory> StatusHistory { get; private set; } = new List<ShipmentStatusHistory>();
     public Guid? CustomerId { get; private set; }
     public Guid? CourierId { get; private set; }
+    public DateTime? DelayNotifiedAt { get; private set; }
 
 
     private Shipment() { } // For EF Core
@@ -52,6 +53,11 @@ public class Shipment
         CreatedAt = DateTime.UtcNow;
         StatusHistory.Add(new ShipmentStatusHistory(Id, null, ShipmentStatus.Created));
         CustomerId = customerId;
+    }
+
+    public void MarkDelayNotified()
+    {
+        DelayNotifiedAt = DateTime.UtcNow;
     }
 
     public void AssignCourier(Guid courierId)

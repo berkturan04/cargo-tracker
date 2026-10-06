@@ -138,4 +138,14 @@ public class ShipmentTests
 
         Assert.Throws<InvalidShipmentOperationException>(() => shipment.AssignCourier(Guid.NewGuid()));
     }
+    
+    [Fact]
+    public void MarkDelayNotified_SetsDelayNotifiedAt()
+    {
+        var shipment = CreateValidShipment();
+
+        shipment.MarkDelayNotified();
+
+        Assert.NotNull(shipment.DelayNotifiedAt);
+    }
 }
