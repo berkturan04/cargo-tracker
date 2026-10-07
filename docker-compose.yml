@@ -10,6 +10,14 @@ services:
       - "5432:5432"
     volumes:
       - cargo-tracker-data:/var/lib/postgresql
+  redis:
+    image: redis:8
+    container_name: cargo-tracker-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - cargo-tracker-redis-data:/data
 
 volumes:
   cargo-tracker-data:
+  cargo-tracker-redis-data:
