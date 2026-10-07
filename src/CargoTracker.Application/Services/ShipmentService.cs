@@ -9,11 +9,13 @@ public class ShipmentService : IShipmentService
 {
     private readonly IShipmentRepository _shipmentRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ICacheService _cacheService;
 
-    public ShipmentService(IShipmentRepository shipmentRepository, IUserRepository userRepository)
+    public ShipmentService(IShipmentRepository shipmentRepository, IUserRepository userRepository, ICacheService cacheService)
     {
         _shipmentRepository = shipmentRepository;
         _userRepository = userRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<ShipmentResponse> CreateAsync(CreateShipmentRequest request, Guid? customerId)
@@ -36,12 +38,25 @@ public class ShipmentService : IShipmentService
 
     public async Task<ShipmentResponse?> GetByTrackingNumberAsync(string trackingNumber, Guid? requestingCustomerId)
     {
-        var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
-        if (shipment is null)
+        var cacheKey = ShipmentCacheKey(trackingNumber);
+        var response = await _cacheService.GetAsync<ShipmentResponse>(cacheKey);
+
+        if (response is null)
+        {
+            // cache'te yoktu (cache miss), veritabanına git
+            var shipment = await _shipmentRepository.GetByTrackingNumberAsync(trackingNumber);
+            if (shipment is null)
+                return null;
+
+            response = MapToResponse(shipment);
+            await _cacheService.SetAsync(cacheKey, response, TimeSpan.FromMinutes(5));
+        }
+
+        // sahiplik kontrolü, cache'ten gelse de veritabanından gelse de aynı şekilde uygulanıyor
+        if (requestingCustomerId.HasValue && response.CustomerId != requestingCustomerId.Value)
             return null;
-        if (requestingCustomerId.HasValue && shipment.CustomerId != requestingCustomerId.Value)
-            return null;
-        return MapToResponse(shipment);
+
+        return response;
     }
 
     private static ShipmentResponse MapToResponse(Shipment shipment)
@@ -76,6 +91,8 @@ public class ShipmentService : IShipmentService
 
         await _shipmentRepository.SaveChangesAsync();
 
+        await _cacheService.RemoveAsync(ShipmentCacheKey(trackingNumber));
+
         return MapToResponse(shipment);
     }
 
@@ -92,6 +109,8 @@ public class ShipmentService : IShipmentService
         shipment.AssignCourier(courierId);
 
         await _shipmentRepository.SaveChangesAsync();
+
+        await _cacheService.RemoveAsync(ShipmentCacheKey(trackingNumber));
 
         return MapToResponse(shipment);
     }
@@ -132,4 +151,5 @@ public class ShipmentService : IShipmentService
             PageSize = pageSize
         };
     }
+    private static string ShipmentCacheKey(string trackingNumber) => $"shipment:{trackingNumber}";
 }

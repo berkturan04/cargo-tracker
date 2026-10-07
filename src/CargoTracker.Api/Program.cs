@@ -7,6 +7,7 @@ using CargoTracker.Application.Abstractions;
 using CargoTracker.Application.Services;
 using CargoTracker.Application.Validators;
 using CargoTracker.Infrastructure;
+using CargoTracker.Infrastructure.Caching;
 using CargoTracker.Infrastructure.Notifications;
 using CargoTracker.Infrastructure.Persistence;
 using CargoTracker.Infrastructure.Repositories;
@@ -51,6 +52,11 @@ try
     builder.Services.AddSingleton<INotificationService, LoggingNotificationService>();
     builder.Services.Configure<DelayedShipmentCheckerOptions>(builder.Configuration.GetSection("DelayedShipmentChecker"));
     builder.Services.AddHostedService<DelayedShipmentCheckerService>();
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    });
+    builder.Services.AddScoped<ICacheService, RedisCacheService>();
     builder.Services.AddDbContext<CargoTrackerDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("CargoTrackerDb")));
     builder.Services.AddOpenApi(options =>
