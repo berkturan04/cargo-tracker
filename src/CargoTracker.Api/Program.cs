@@ -115,6 +115,13 @@ try
 
     app.Run();
 }
+catch (HostAbortedException)
+{
+    // WebApplicationFactory (entegrasyon testleri), host'u yakalayıp
+    // kontrollü durdurmak için bu istisnayı kasıtlı olarak fırlatır.
+    // Gerçek bir hata değil, olduğu gibi yukarı geçsin.
+    throw;
+}
 catch (Exception ex)
 {
     Log.Fatal(ex, "CargoTracker.Api beklenmeyen şekilde sonlandı.");
@@ -122,4 +129,8 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+public partial class Program
+{
+
 }
