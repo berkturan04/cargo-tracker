@@ -7,5 +7,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CargoTracker.Domain.Tests/CargoTracker.Domain.Tests.csproj" />
+    <Project Path="tests/CargoTracker.IntegrationTests/CargoTracker.IntegrationTests.csproj" />
   </Folder>
 </Solution>
