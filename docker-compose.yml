@@ -10,6 +10,12 @@ services:
       - "5432:5432"
     volumes:
       - cargo-tracker-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cargo -d cargotracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:8
     container_name: cargo-tracker-redis
@@ -17,6 +23,36 @@ services:
       - "6379:6379"
     volumes:
       - cargo-tracker-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/CargoTracker.Api/Dockerfile
+    container_name: cargo-tracker-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__CargoTrackerDb: "Host=postgres;Port=5432;Database=cargotracker;Username=cargo;Password=cargo_dev_pw"
+      ConnectionStrings__Redis: "redis:6379"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: CargoTracker
+      Jwt__Audience: CargoTrackerClients
+      Jwt__ExpiryMinutes: "60"
+      SeedAdmin__Email: ${SEED_ADMIN_EMAIL}
+      SeedAdmin__Password: ${SEED_ADMIN_PASSWORD}
+      ApplyMigrationsOnStartup: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   cargo-tracker-data:
