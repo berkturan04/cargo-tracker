@@ -92,6 +92,12 @@ try
     builder.Services.AddAuthorization();
 
     var app = builder.Build();
+    if (builder.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
+    {
+        using var migrationScope = app.Services.CreateScope();
+        var dbContext = migrationScope.ServiceProvider.GetRequiredService<CargoTrackerDbContext>();
+        await dbContext.Database.MigrateAsync();
+    }
     await AdminSeeder.SeedAsync(app.Services, app.Configuration);
 
     // Configure the HTTP request pipeline.
