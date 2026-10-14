@@ -21,6 +21,9 @@ public class ShipmentsController : ControllerBase
         _createShipmentValidator = createShipmentValidator;
     }
 
+
+    /// <summary>Yeni bir kargo oluşturur.</summary>
+    /// <remarks>Customer olarak oluşturulursa kargo otomatik olarak o müşteriye atanır.</remarks>
     [HttpPost]
     [Authorize(Roles = "Customer,Admin")]
     public async Task<ActionResult<ShipmentResponse>> Create(CreateShipmentRequest request)
@@ -36,6 +39,9 @@ public class ShipmentsController : ControllerBase
         return CreatedAtAction(nameof(GetByTrackingNumber), new { trackingNumber = response.TrackingNumber }, response);
     }
 
+
+    /// <summary>Takip numarasıyla tek bir kargoyu getirir.</summary>
+    /// <remarks>Customer sadece kendi kargosunu görebilir; başkasının kargosu için 404 döner.</remarks>
     [HttpGet("{trackingNumber}")]
     public async Task<ActionResult<ShipmentResponse>> GetByTrackingNumber(string trackingNumber)
     {
@@ -46,6 +52,8 @@ public class ShipmentsController : ControllerBase
         return response is null ? NotFound() : Ok(response);
     }
 
+    /// <summary>Tüm kargoları listeler.</summary>
+    /// <remarks>Sadece Admin rolü erişebilir. Durum/şehir/tarihe göre filtrelenebilir, sayfalanabilir.</remarks>
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAll([FromQuery] ShipmentQuery query)
@@ -53,6 +61,8 @@ public class ShipmentsController : ControllerBase
         return Ok(await _shipmentService.GetAllAsync(query));
     }
 
+
+    /// <summary>Giriş yapan müşterinin kendi kargolarını listeler.</summary>
     [HttpGet("mine")]
     [Authorize(Roles = "Customer")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetMine([FromQuery] ShipmentQuery query)
@@ -60,6 +70,8 @@ public class ShipmentsController : ControllerBase
         return Ok(await _shipmentService.GetAllAsync(query));
     }
 
+    /// <summary>Bir kargonun durumunu ilerletir.</summary>
+    /// <remarks>Geçişler durum makinesine göre doğrulanır. Courier sadece kendine atanan kargoları güncelleyebilir.</remarks>
     [HttpPatch("{trackingNumber}/status")]
     [Authorize(Roles = "Courier,Admin")]
     public async Task<ActionResult<ShipmentResponse>> UpdateStatus(string trackingNumber, UpdateShipmentStatusRequest request)
@@ -72,6 +84,8 @@ public class ShipmentsController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>Bir kargoya kurye atar.</summary>
+    /// <remarks>Sadece Admin rolü erişebilir. Teslim edilmiş/iade edilmiş kargolara kurye atanamaz.</remarks>
     [HttpPatch("{trackingNumber}/courier")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ShipmentResponse>> AssignCourier(string trackingNumber, AssignCourierRequest request)
@@ -82,6 +96,7 @@ public class ShipmentsController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>Giriş yapan kuryeye atanmış kargoları listeler.</summary>
     [HttpGet("assigned")]
     [Authorize(Roles = "Courier")]
     public async Task<ActionResult<PagedResult<ShipmentResponse>>> GetAssigned([FromQuery] ShipmentQuery query)

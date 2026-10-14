@@ -99,6 +99,7 @@ try
         await dbContext.Database.MigrateAsync();
     }
     await AdminSeeder.SeedAsync(app.Services, app.Configuration);
+    await DemoDataSeeder.SeedAsync(app.Services, app.Configuration);
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())

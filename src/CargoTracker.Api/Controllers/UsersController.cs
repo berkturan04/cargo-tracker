@@ -18,6 +18,9 @@ public class UsersController : ControllerBase
         _authService = authService;
     }
 
+
+    /// <summary>Admin, Customer veya Courier rolünde yeni bir kullanıcı oluşturur.</summary>
+    /// <remarks>Sadece Admin rolü erişebilir.</remarks>
     [HttpPost]
     public async Task<ActionResult<UserResponse>> Create(CreateUserRequest request)
     {

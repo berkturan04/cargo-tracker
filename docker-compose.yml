@@ -48,6 +48,7 @@ services:
       SeedAdmin__Email: ${SEED_ADMIN_EMAIL}
       SeedAdmin__Password: ${SEED_ADMIN_PASSWORD}
       ApplyMigrationsOnStartup: "true"
+      SeedDemoData: "true"
     depends_on:
       postgres:
         condition: service_healthy
